@@ -2,15 +2,12 @@ API_ID: int = 6
 API_HASH: str = "eb06d4abfb49dc3eeb1aeb98ae0f581e"
 BOT_TOKEN: str = ""
 
-
 DB_URI: str = "mongodb://localhost:27017"
 DB_NAME: str = "SPOwnerBot"
-
 
 OWNERS: list = [
     1
 ]
-
 
 TEXTS: dict = {
     "start": "Send me the sticker to know his owner.",

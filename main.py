@@ -5,12 +5,10 @@ from pyrogram.raw.types import InputStickerSetShortName
 from pyrogram.enums import MessageEntityType
 from db import DataBase
 
-from config import API_ID, API_HASH, BOT_TOKEN, DB_URI, DB_NAME, OWNERS, TEXTS
+from basic_data import TEXTS
+from config import API_ID, API_HASH, BOT_TOKEN, DB_URI, DB_NAME
 
-from typing import Callable, List
-
-
-# owners_filter: Callable = lambda client, message: message.from_user.id in OWNERS
+from typing import List, Union
 
 
 db: DataBase = DataBase(
@@ -42,12 +40,19 @@ async def start_command_handler(client: Client, message: types.Message) -> None:
 
 
 async def send_owner_message(message: types.Message, set_id: int) -> None:
-    int32_id: int = set_id >> 32
+    user_id: int = set_id >> 32
+
+    set_increment_id: Union[int, None] = None
+
+    if set_id >> 24 & 0xff:
+        user_id = user_id + 0x100000000
+    else:
+        set_increment_id = set_id & 0xffffffff
 
     await message.reply_text(
         text = TEXTS["owner"].format(
-            int32_id = int32_id,
-            int64_id = 0x100000000 + int32_id
+            user_id = user_id,
+            set_increment_id = set_increment_id
         )
     )
 

@@ -1,5 +1,7 @@
+import logging
 from typing import Final, cast
 
+from pymongo.errors import PyMongoError
 from telethon import TelegramClient, events
 from telethon.tl.custom import Message
 from telethon.tl.functions.messages import GetCustomEmojiDocumentsRequest
@@ -17,6 +19,9 @@ from config import API_HASH, API_ID, BOT_TOKEN, DB_NAME, DB_URI
 from db import DataBase
 
 MAX_CUSTOM_EMOJIS: Final[int] = 50
+
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 db: DataBase = DataBase(db_uri=DB_URI, db_name=DB_NAME)
@@ -140,6 +145,12 @@ def main() -> None:
     client.add_event_handler(sticker_handler, events.NewMessage(incoming=True))
 
     client.add_event_handler(custom_emojis_handler, events.NewMessage(incoming=True))
+
+    try:
+        client.loop.run_until_complete(db.create_indexes())
+    except PyMongoError:
+        # Sticker lookups don't need MongoDB, so a DB outage must not block startup
+        logger.exception("Can't create MongoDB indexes")
 
     client.start(bot_token=BOT_TOKEN)
 

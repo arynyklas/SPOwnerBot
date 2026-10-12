@@ -18,6 +18,10 @@ class DataBase:
             db_name
         ).get_collection("users")
 
+    async def create_indexes(self) -> None:
+        # Unique: one document per user, so concurrent /start upserts can't duplicate
+        await self._users.create_index("user_id", unique=True)
+
     async def add_user(self, user_id: int) -> None:
         await self._users.update_one(
             filter={"user_id": user_id},

@@ -12,10 +12,18 @@
 
 # Running:
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+uv sync --locked                # runtime deps into .venv
 cp config.py.example config.py  # fill API_ID, API_HASH, BOT_TOKEN, DB_URI
 .venv/bin/python main.py
 ```
 
-Type check: `pip install mypy && mypy .` (strict, see `pyproject.toml`).
+
+# Development:
+```sh
+uv sync --extra dev
+uv run ruff check
+uv run ruff format --check
+uv run ty check
+```
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull request.

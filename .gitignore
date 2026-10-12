@@ -1,8 +1,7 @@
 __pycache__/
-.mypy_cache/
+.ruff_cache/
 .venv/
 *.session*
 config.py
 *.txt
-!requirements.txt
 test*

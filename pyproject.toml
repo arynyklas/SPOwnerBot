@@ -1,12 +1,47 @@
-[tool.mypy]
-python_version = "3.10"
-strict = true
-exclude = ["^\\.venv/"]
-# Message.reply, NewMessage(...) and other Telethon helpers are unannotated
-untyped_calls_exclude = ["telethon"]
+[project]
+name = "spownerbot"
+version = "2.0.0"
+description = "Telegram bot that tells who owns a sticker or custom emoji pack."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pymongo>=4.18",
+    "telethon>=1.45,<2",
+]
 
-[[tool.mypy.overrides]]
-# Telethon ships annotations but neither py.typed nor __all__
-module = ["telethon", "telethon.*"]
-follow_untyped_imports = true
-implicit_reexport = true
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.17",
+    "ty>=0.0.86",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "F",     # Pyflakes
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "C4",    # flake8-comprehensions
+    "S",     # bandit
+    "ANN",   # flake8-annotations: every function fully annotated
+    "ASYNC", # flake8-async
+    "G",     # flake8-logging-format
+    "PL",    # Pylint
+    "RUF",   # Ruff-specific
+]
+
+[tool.ruff.lint.isort]
+# config.py is gitignored, so CI can't auto-detect it as first-party
+known-first-party = ["basic_data", "config", "db"]
+
+[tool.ty]
+environment.python-version = "3.10"
+rules.all = "error"

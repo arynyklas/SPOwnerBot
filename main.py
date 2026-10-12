@@ -1,14 +1,23 @@
-from pyrogram import Client, filters, types
-from pyrogram.raw.types.messages.sticker_set import StickerSet
-from pyrogram.raw.functions.messages import GetStickerSet
-from pyrogram.raw.types import InputStickerSetShortName
-from pyrogram.enums import MessageEntityType
-from db import DataBase
+from telethon import TelegramClient, events
+from telethon.tl.custom import Message
+from telethon.tl.functions.messages import GetCustomEmojiDocumentsRequest
+from telethon.tl.types import (
+    Document,
+    DocumentAttributeCustomEmoji,
+    DocumentAttributeSticker,
+    InputStickerSetID,
+    MessageEntityCustomEmoji,
+    TypeDocument
+)
 
 from basic_data import TEXTS
 from config import API_ID, API_HASH, BOT_TOKEN, DB_URI, DB_NAME
+from db import DataBase
 
-from typing import List
+from typing import Final
+
+
+MAX_CUSTOM_EMOJIS: Final[int] = 50
 
 
 db: DataBase = DataBase(
@@ -17,29 +26,18 @@ db: DataBase = DataBase(
 )
 
 
-app: Client = Client(
-    name = DB_NAME,
+client: TelegramClient = TelegramClient(
+    session = "telethon",
     api_id = API_ID,
-    api_hash = API_HASH,
-    bot_token = BOT_TOKEN
+    api_hash = API_HASH
 )
 
-
-@app.on_message(filters.command(["start"]) & filters.private)
-async def start_command_handler(client: Client, message: types.Message) -> None:
-    if not db.get_user(
-        user_id = message.from_user.id
-    ):
-        db.add_user(
-            user_id = message.from_user.id
-        )
-
-    await message.reply_text(
-        text = TEXTS["start"]
-    )
+client.parse_mode = "html"
 
 
-async def send_owner_message(message: types.Message, set_id: int) -> None:
+def decode_set_id(set_id: int) -> tuple[int, int]:
+    """Returns `(owner user ID, owner's set increment ID)`."""
+
     # set id = (owner & 0x7FFFFFFF) << 32 | ~((owner >> 31) << 22 | set_increment_id)
     #
     # The high word carries only the low 31 bits of the owner's id; the complement of the low word
@@ -55,99 +53,129 @@ async def send_owner_message(message: types.Message, set_id: int) -> None:
     low_word: int = set_id & 0xFFFFFFFF
 
     if low_word >> 24 == 0:
-        user_id: int = high_word
-        set_increment_id: int = low_word
-    else:
-        user_id = high_word + (((~low_word & 0xFFFFFFFF) >> 22) << 31)
-        set_increment_id = ~low_word & 0x3FFFFF
+        return high_word, low_word
 
-    await message.reply_text(
-        text = TEXTS["owner"].format(
+    return high_word + (((~low_word & 0xFFFFFFFF) >> 22) << 31), ~low_word & 0x3FFFFF
+
+
+def get_set_id(document: TypeDocument | None) -> int | None:
+    """Reads the set ID the sticker document already carries, no `GetStickerSet` round trip."""
+
+    if not isinstance(document, Document):
+        return None
+
+    for attribute in document.attributes:
+        if (
+            isinstance(attribute, (DocumentAttributeSticker, DocumentAttributeCustomEmoji))
+            and isinstance(attribute.stickerset, InputStickerSetID)
+        ):
+            return attribute.stickerset.id
+
+    return None
+
+
+async def reply_owner(message: Message, set_id: int) -> None:
+    user_id, set_increment_id = decode_set_id(set_id)
+
+    await message.reply(
+        message = TEXTS.owner.format(
             user_id = user_id,
             set_increment_id = set_increment_id
         )
     )
 
 
-@app.on_message(filters.sticker)
-async def stickers_handler(client: Client, message: types.Message) -> None:
-    sticker_short_name: str = message.sticker.set_name
+async def start_command_handler(event: events.NewMessage.Event) -> None:
+    message: Message = event.message
+    user_id: int | None = message.sender_id
 
-    if not sticker_short_name:
-        return
-
-    response: StickerSet = await client.invoke(
-        query = GetStickerSet(
-            hash = 0,
-            stickerset = InputStickerSetShortName(
-                short_name = sticker_short_name
-            )
+    if user_id is not None:
+        await db.add_user(
+            user_id = user_id
         )
+
+    await message.respond(
+        message = TEXTS.start
     )
 
-    if not response:
+
+async def sticker_handler(event: events.NewMessage.Event) -> None:
+    message: Message = event.message
+    set_id: int | None = get_set_id(message.sticker)
+
+    if set_id is None:
         return
 
-    await send_owner_message(
+    await reply_owner(
         message = message,
-        set_id = response.set.id
+        set_id = set_id
     )
 
 
-@app.on_message()
-async def custom_emojis_handler(client: Client, message: types.Message) -> None:
-    if not message.entities:
+async def custom_emojis_handler(event: events.NewMessage.Event) -> None:
+    message: Message = event.message
+
+    custom_emoji_ids: list[int] = list(dict.fromkeys(
+        entity.document_id
+        for entity in message.entities or []
+        if isinstance(entity, MessageEntityCustomEmoji)
+    ))[:MAX_CUSTOM_EMOJIS]
+
+    if not custom_emoji_ids:
         return
 
-    custom_emoji_ids: List[int] = []
-
-    for entity in message.entities:
-        entity: types.MessageEntity
-
-        if entity.type != MessageEntityType.CUSTOM_EMOJI:
-            continue
-
-        custom_emoji_ids.append(entity.custom_emoji_id)
-
-        if len(custom_emoji_ids) == 50:
-            break
-
-    stickers: List[types.Sticker] = await client.get_custom_emoji_stickers(
-        custom_emoji_ids = custom_emoji_ids
-    )
-
-    if not stickers:
-        return
-
-    parsed_sticker_sets: List[str] = []
-
-    for sticker in stickers:
-        sticker: types.Sticker
-
-        sticker_short_name: str = sticker.set_name
-
-        if not sticker_short_name or sticker_short_name in parsed_sticker_sets:
-            continue
-
-        parsed_sticker_sets.append(sticker_short_name)
-
-        response: StickerSet = await client.invoke(
-            query = GetStickerSet(
-                stickerset = InputStickerSetShortName(
-                    short_name = sticker_short_name
-                ),
-                hash = 0
-            )
+    documents: list[TypeDocument] = await client(
+        GetCustomEmojiDocumentsRequest(
+            document_id = custom_emoji_ids
         )
+    )
 
-        if not response:
+    replied_set_ids: set[int] = set()
+
+    for document in documents:
+        set_id: int | None = get_set_id(document)
+
+        if set_id is None or set_id in replied_set_ids:
             continue
 
-        await send_owner_message(
+        replied_set_ids.add(set_id)
+
+        await reply_owner(
             message = message,
-            set_id = response.set.id
+            set_id = set_id
         )
+
+
+def main() -> None:
+    client.add_event_handler(
+        start_command_handler,
+        events.NewMessage(
+            incoming = True,
+            pattern = r"(?i)^/start\b",
+            func = lambda event: event.is_private
+        )
+    )
+
+    client.add_event_handler(
+        sticker_handler,
+        events.NewMessage(
+            incoming = True
+        )
+    )
+
+    client.add_event_handler(
+        custom_emojis_handler,
+        events.NewMessage(
+            incoming = True
+        )
+    )
+
+    client.start(
+        bot_token = BOT_TOKEN
+    )
+
+    client.run_until_disconnected()
 
 
 if __name__ == "__main__":
-    app.run()
+    main()

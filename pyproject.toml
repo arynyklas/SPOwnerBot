@@ -1,0 +1,12 @@
+[tool.mypy]
+python_version = "3.10"
+strict = true
+exclude = ["^\\.venv/"]
+# Message.reply, NewMessage(...) and other Telethon helpers are unannotated
+untyped_calls_exclude = ["telethon"]
+
+[[tool.mypy.overrides]]
+# Telethon ships annotations but neither py.typed nor __all__
+module = ["telethon", "telethon.*"]
+follow_untyped_imports = true
+implicit_reexport = true

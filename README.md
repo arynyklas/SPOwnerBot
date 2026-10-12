@@ -10,17 +10,21 @@
 ### [PyMongo](https://pypi.org/project/pymongo/) - 4.18.3
 
 
+# Setup:
+```sh
+uv sync --locked --extra dev    # drop --extra dev on servers
+cp config.py.example config.py  # fill API_ID, API_HASH, BOT_TOKEN, DB_URI
+```
+
+
 # Running:
 ```sh
-uv sync --locked                # runtime deps into .venv
-cp config.py.example config.py  # fill API_ID, API_HASH, BOT_TOKEN, DB_URI
 .venv/bin/python main.py
 ```
 
 
-# Development:
+# Checks:
 ```sh
-uv sync --extra dev
 uv run ruff check
 uv run ruff format --check
 uv run ty check

@@ -1,4 +1,6 @@
 __pycache__/
+.ruff_cache/
+.venv/
 *.session*
 config.py
 *.txt

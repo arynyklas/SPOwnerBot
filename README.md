@@ -4,7 +4,30 @@
 
 
 # Technologies used:
-### [MongoDB](https://www.mongodb.com/) - 4.4.6
-### [Python](https://www.python.org/) - 3.7+
-### [pyrogram](https://pypi.org/project/Pyrogram/) - 2.0.40
-### [TgCrypto](https://pypi.org/project/TgCrypto/) - 1.2.2
+### [MongoDB](https://www.mongodb.com/) - 5.0
+### [Python](https://www.python.org/) - 3.10+
+### [Telethon](https://pypi.org/project/Telethon/) - 1.45.0
+### [PyMongo](https://pypi.org/project/pymongo/) - 4.18.3
+
+
+# Setup:
+```sh
+uv sync --locked --extra dev    # drop --extra dev on servers
+cp config.py.example config.py  # fill API_ID, API_HASH, BOT_TOKEN, DB_URI
+```
+
+
+# Running:
+```sh
+.venv/bin/python main.py
+```
+
+
+# Checks:
+```sh
+uv run ruff check
+uv run ruff format --check
+uv run ty check
+```
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every push and pull request.

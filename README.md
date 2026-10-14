@@ -1,6 +1,7 @@
 # Thanks for:
-### [@teleX](https://t.me/teleX) - 2505806
-### [@DavideGalilei](https://t.me/DavideGalilei) - 239556789
+### [@teleX](https://t.me/teleX)
+### [@DavideGalilei](https://t.me/DavideGalilei)
+### [@madrik1337](https://t.me/madrik1337)
 
 
 # Technologies used:

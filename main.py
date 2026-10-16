@@ -17,6 +17,7 @@ from telethon.tl.types import (
 from basic_data import TEXTS
 from config import API_HASH, API_ID, BOT_TOKEN, DB_NAME, DB_URI
 from db import DataBase
+from logs import setup_logging
 
 MAX_CUSTOM_EMOJIS: Final[int] = 50
 
@@ -135,6 +136,8 @@ async def custom_emojis_handler(event: events.NewMessage.Event) -> None:
 
 
 def main() -> None:
+    setup_logging()
+
     client.add_event_handler(
         start_command_handler,
         events.NewMessage(

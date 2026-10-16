@@ -14,14 +14,15 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-        # main.py survives a MongoDB outage (stickers don't need it), so an
-        # unhealthy mongo only logs a warning instead of keeping the bot down.
+        # The bundled mongo only runs with `--profile mongo`; production uses
+        # a shared MongoDB instead. main.py also survives a MongoDB outage
+        # (stickers don't need it), so this never blocks the bot.
         required: false
     volumes:
-      # config.py is read from here (the image links /app/config.py to it).
-      # The directory, not the file: a single-file bind mount keeps the old
-      # inode, so an edit saved by rename would never reach the container.
-      - .:/etc/spownerbot:ro
+      # The secrets: only this file, read-only. A single-file bind mount
+      # keeps the inode it was started with, so after replacing the file run
+      # `docker compose restart bot`.
+      - ${SPOWNERBOT_CONFIG_FILE:-./config.json}:/etc/spownerbot/config.json:ro
       # telethon.session: the bot's authorization outlives the container.
       - session:/data
     read_only: true
@@ -34,6 +35,9 @@ services:
     logging: *logging
 
   mongo:
+    # Local development only: `docker compose --profile mongo up -d`.
+    profiles:
+      - mongo
     # mongo:8.0.34 (multi-arch index digest). Needs AVX: on Proxmox's default
     # kvm64 CPU type mongod dies with "Illegal instruction".
     image: mongo:8.0.34@sha256:6657bf2413fefc5be649390318f5b4cd7328e982722f8ce2ac6dfa6f0a42cb03

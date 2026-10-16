@@ -27,9 +27,11 @@ jobs:
       - name: install
         run: uv sync --locked --extra dev
 
-      - name: config stub
-        # config.py is gitignored; the example carries the names and types main.py imports
-        run: cp config.py.example config.py
+      - name: config example
+        # config.json is gitignored; load the example the way main.py does
+        run: |
+          cp config.json.example config.json
+          SPOWNERBOT_CONFIG=config.json uv run python -c "from settings import load_config; load_config()"
 
       - name: lint
         run: uv run ruff check

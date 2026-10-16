@@ -1,0 +1,7 @@
+{
+  "api_id": 12345,
+  "api_hash": "your-api-hash",
+  "bot_token": "123456:your-bot-token",
+  "db_uri": "mongodb://mongo:27017",
+  "db_name": "SPOwnerBot"
+}

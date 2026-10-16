@@ -1,0 +1,59 @@
+name: spownerbot
+
+x-logging: &logging
+  # json-file keeps `docker compose logs` working; uncapped it grows forever.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+        # The bundled mongo only runs with `--profile mongo`; production uses
+        # a shared MongoDB instead. main.py also survives a MongoDB outage
+        # (stickers don't need it), so this never blocks the bot.
+        required: false
+    volumes:
+      # The secrets: only this file, read-only. A single-file bind mount
+      # keeps the inode it was started with, so after replacing the file run
+      # `docker compose restart bot`.
+      - ${SPOWNERBOT_CONFIG_FILE:-./config.json}:/etc/spownerbot/config.json:ro
+      # telethon.session: the bot's authorization outlives the container.
+      - session:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  mongo:
+    # Local development only: `docker compose --profile mongo up -d`.
+    profiles:
+      - mongo
+    # mongo:8.0.34 (multi-arch index digest). Needs AVX: on Proxmox's default
+    # kvm64 CPU type mongod dies with "Illegal instruction".
+    image: mongo:8.0.34@sha256:6657bf2413fefc5be649390318f5b4cd7328e982722f8ce2ac6dfa6f0a42cb03
+    restart: unless-stopped
+    # No published ports and no auth: only the compose network reaches it.
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+      start_interval: 1s
+    logging: *logging
+
+volumes:
+  mongo-data:
+  session:

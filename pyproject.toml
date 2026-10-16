@@ -3,7 +3,7 @@ name = "spownerbot"
 version = "2.0.0"
 description = "Telegram bot that tells who owns a sticker or custom emoji pack."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = [
     "pymongo>=4.18",
     "telethon>=1.45,<2",
@@ -16,7 +16,7 @@ dev = [
 ]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py313"
 line-length = 88
 
 [tool.ruff.lint]
@@ -38,10 +38,6 @@ select = [
     "RUF",   # Ruff-specific
 ]
 
-[tool.ruff.lint.isort]
-# config.py is gitignored, so CI can't auto-detect it as first-party
-known-first-party = ["basic_data", "config", "db"]
-
 [tool.ty]
-environment.python-version = "3.10"
+environment.python-version = "3.13"
 rules.all = "error"

@@ -1,0 +1,10 @@
+# Allowlist: the image needs only the lockfile and the bot's modules.
+# config.json carries the secrets and is mounted at run time instead; a
+# leftover pre-JSON config.py would match !*.py, so it is excluded explicitly.
+*
+!*.py
+!pyproject.toml
+!uv.lock
+!.python-version
+config.py
+test*

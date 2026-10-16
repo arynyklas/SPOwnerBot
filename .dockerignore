@@ -1,0 +1,9 @@
+# Allowlist: the image needs only the lockfile and the bot's modules.
+# config.py carries the secrets and is mounted at run time instead.
+*
+!*.py
+!pyproject.toml
+!uv.lock
+!.python-version
+config.py
+test*

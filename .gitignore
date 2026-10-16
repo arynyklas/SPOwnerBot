@@ -2,6 +2,8 @@ __pycache__/
 .ruff_cache/
 .venv/
 *.session*
+config.json
+# pre-JSON config module; keep a leftover copy out of git
 config.py
 *.txt
 test*

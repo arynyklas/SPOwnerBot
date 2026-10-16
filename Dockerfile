@@ -26,10 +26,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY *.py ./
 
-# config.py holds the secrets, so it stays out of the image: the link resolves
-# into the directory mounted at /etc/spownerbot (compose mounts the project
-# root).
-RUN ln -s /etc/spownerbot/config.py config.py && mkdir /data
+# config.json holds the secrets, so it stays out of the image: compose mounts
+# it read-only at /etc/spownerbot/config.json, where settings.py looks by
+# default.
+RUN mkdir /data
 
 # gcr.io/distroless/cc-debian13:latest (multi-arch index digest): glibc and
 # libssl, no shell.

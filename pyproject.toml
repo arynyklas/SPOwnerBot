@@ -38,10 +38,6 @@ select = [
     "RUF",   # Ruff-specific
 ]
 
-[tool.ruff.lint.isort]
-# config.py is gitignored, so CI can't auto-detect it as first-party
-known-first-party = ["basic_data", "config", "db"]
-
 [tool.ty]
 environment.python-version = "3.13"
 rules.all = "error"

@@ -1,4 +1,6 @@
 import logging
+import sys
+from functools import partial
 from typing import Final, cast
 
 from pymongo.errors import PyMongoError
@@ -15,24 +17,14 @@ from telethon.tl.types import (
 )
 
 from basic_data import TEXTS
-from config import API_HASH, API_ID, BOT_TOKEN, DB_NAME, DB_URI
 from db import DataBase
 from logs import setup_logging
+from settings import Config, ConfigError, load_config
 
 MAX_CUSTOM_EMOJIS: Final[int] = 50
 
 
 logger: logging.Logger = logging.getLogger(__name__)
-
-
-db: DataBase = DataBase(db_uri=DB_URI, db_name=DB_NAME)
-
-
-client: TelegramClient = TelegramClient(
-    session="telethon", api_id=API_ID, api_hash=API_HASH
-)
-
-client.parse_mode = "html"
 
 
 def decode_set_id(set_id: int) -> tuple[int, int]:
@@ -83,7 +75,7 @@ async def reply_owner(message: Message, set_id: int) -> None:
     )
 
 
-async def start_command_handler(event: events.NewMessage.Event) -> None:
+async def start_command_handler(event: events.NewMessage.Event, db: DataBase) -> None:
     message: Message = cast(Message, event.message)
     user_id: int | None = cast(int | None, message.sender_id)
 
@@ -103,7 +95,9 @@ async def sticker_handler(event: events.NewMessage.Event) -> None:
     await reply_owner(message=message, set_id=set_id)
 
 
-async def custom_emojis_handler(event: events.NewMessage.Event) -> None:
+async def custom_emojis_handler(
+    event: events.NewMessage.Event, client: TelegramClient
+) -> None:
     message: Message = cast(Message, event.message)
 
     custom_emoji_ids: list[int] = list(
@@ -138,8 +132,22 @@ async def custom_emojis_handler(event: events.NewMessage.Event) -> None:
 def main() -> None:
     setup_logging()
 
+    try:
+        config: Config = load_config()
+    except ConfigError as error:
+        logger.critical("Can't load config: %s", error)
+        sys.exit(1)
+
+    db: DataBase = DataBase(db_uri=config.db_uri, db_name=config.db_name)
+
+    client: TelegramClient = TelegramClient(
+        session="telethon", api_id=config.api_id, api_hash=config.api_hash
+    )
+
+    client.parse_mode = "html"
+
     client.add_event_handler(
-        start_command_handler,
+        partial(start_command_handler, db=db),
         events.NewMessage(
             incoming=True, pattern=r"(?i)^/start\b", func=lambda event: event.is_private
         ),
@@ -147,7 +155,9 @@ def main() -> None:
 
     client.add_event_handler(sticker_handler, events.NewMessage(incoming=True))
 
-    client.add_event_handler(custom_emojis_handler, events.NewMessage(incoming=True))
+    client.add_event_handler(
+        partial(custom_emojis_handler, client=client), events.NewMessage(incoming=True)
+    )
 
     try:
         client.loop.run_until_complete(db.create_indexes())
@@ -155,7 +165,7 @@ def main() -> None:
         # Sticker lookups don't need MongoDB, so a DB outage must not block startup
         logger.exception("Can't create MongoDB indexes")
 
-    client.start(bot_token=BOT_TOKEN)
+    client.start(bot_token=config.bot_token)
 
     client.run_until_disconnected()
 

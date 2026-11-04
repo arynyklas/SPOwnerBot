@@ -34,7 +34,7 @@ RUN mkdir /data
 # gcr.io/distroless/cc-debian13:latest (multi-arch index digest): glibc and
 # libssl, no shell. The tag is informational (the digest wins) and lets
 # Dependabot track the base.
-FROM gcr.io/distroless/cc-debian13:latest@sha256:159783207c2cd44c2aa5715961d13c8612368ac9bd450f887e3f08fc8ea461e3
+FROM gcr.io/distroless/cc-debian13:latest@sha256:b2e43dc72acf58a146ed6feaf350806ae3bf4243eb5c68062d06bc13228ca2bd
 
 # Telethon loads libssl for MTProto's AES through ctypes.util.find_library(),
 # which parses `ldconfig -p`; this image has neither ldconfig nor its cache,

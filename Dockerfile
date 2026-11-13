@@ -2,7 +2,7 @@
 
 # debian:trixie-slim (multi-arch index digest). Same Debian release as the
 # runtime image: uv picks wheels for this glibc, and ldconfig is copied over.
-FROM debian:trixie-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS builder
+FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS builder
 
 # ghcr.io/astral-sh/uv:0.13.1 (multi-arch index digest)
 COPY --from=ghcr.io/astral-sh/uv:0.13.1@sha256:4a1f3666816dafadd20ceb71eac9a7d56d7ef30279f7d64048519ab901ada336 /uv /bin/uv
@@ -34,7 +34,7 @@ RUN mkdir /data
 # gcr.io/distroless/cc-debian13:latest (multi-arch index digest): glibc and
 # libssl, no shell. The tag is informational (the digest wins) and lets
 # Dependabot track the base.
-FROM gcr.io/distroless/cc-debian13:latest@sha256:b2e43dc72acf58a146ed6feaf350806ae3bf4243eb5c68062d06bc13228ca2bd
+FROM gcr.io/distroless/cc-debian13:latest@sha256:809d04afa1be033c441f76bb0051878c342fb76d0ea236bc6dc94b655fa0fbd6
 
 # Telethon loads libssl for MTProto's AES through ctypes.util.find_library(),
 # which parses `ldconfig -p`; this image has neither ldconfig nor its cache,
